@@ -1,0 +1,149 @@
+# Iancu Alexandru-Gabriel 324CD
+
+1. Parsarea tabelei de rutare
+
+Stochez tabela de rutare intr-o structura route_table alaturi de dimensiunea acesteia.
+Initial aloc 10 intrari pentru tabela, ca mai apoi daca este necesar dublez
+capacitatea si fac realloc. Apoi citesc linie cu linie din fisier, o linie
+avand informatiile corespunzatoare unei intrari. Am ales sa citesc maxim 50
+de caractere pentru ca stiu ca prefix-ul, ip-ul si masca au fiecare
+maxim 3*4(cifre) + 3(puncte) = 15 caractere si astfel fac impreuna
+15*3 = 45 de octeti, apoi restul de 5 octeti sunt formati din
+unul pentru newline, 3 pentru spatii si 1 pentru interfata.
+
+Apoi folosind strtok tokenizez linia dupa spatii si salvez prefix-ul,
+ip-ul si masca in format uint32_t folosindu-ma de functia inet_addr,
+iar pe interfata folosesc atoi pentru ca e doar un index reprezentat
+ca int.
+
+De asemenea la parsare mai salvez si un vector in structura cu multimea
+mastilor din intrari spre a fi folosita la cautarea binara in tabela
+de rutare, mai multe informatii la cerinta 3.
+
+2. Protocolul ARP
+
+La inceputul while-ului fac parsarea dupa headerul de tip arp folosind
+functia auxiliara din schelet. Daca nu a gasit header-ul functia intoarce
+NULL si imi vad de ceilalti pasi, altfel a intors structura de tip
+arp_header si asta inseamna ca pachetul este de tip ARP si procedez
+corespunzator.
+
+Daca cumva am primit un ARP_REQUEST ce are ca destinatie una din
+interfetele router-ului, atunci ii trimit inapoi un ARP_REPLY cu mac-ul
+interfetei respective. Insa daca este un ARP_REQUEST catre un ip care
+nu e al router-ului, se va ajunge intr-un continue si astfel pachetul
+va fi ignorat si aruncat.
+
+In cazul in care este de tip ARP_REPLY, atunci trebuie sa actualizez
+tabela ARP si sa adaug o intrare cu ip-ul si mac-ul sursa al pachetului
+primit. Daca cumva ip-ul deja se afla in tabela ARP, atunci in interiorul
+functiei add_ARP_entry este ignorata cererea de actualizare.
+Trimit urmatorul pachet ce trebuie dirijat (aflat in coada), voi
+vorbi mai in detaliu despre acest aspect la cerinta 3.
+
+Ma folosesc de o tabela ARP dinamica pe care o stochez intr-o structura
+alaturi de dimensiunea si capacitatea acesteia. Am nevoie sa stiu capacitatea
+pentru ca fata de tabela de rutare, tabela ARP este constant marita. O creez
+initial cu capacitatea 10, ca mai apoi la adaugarea unei intrari, daca cumva 
+se depaseste capacitatea, sa o dublez si sa fac realloc corespunzator pe tabela.
+
+3. Procesul de dirijare
+
+a) Cautarea in tabela de rutare
+
+Pentru fiecare masca din lista de masti(vector cu toate mastile folosite de
+intrari), se face o cautare binara a prefixului format din masca de la
+iteratia curenta si ip-ul ce trebuie cautat in tabela. Pentru a putea face
+o cautare binara in tabela se face in prealabil(doar o data de la inceperea
+programului) o sortare crescatoare a intrarilor din tabela dupa prefix.
+
+Mastile din lista de masti sunt sortate descrescator pentru ca intai sa
+se caute prefix-uri de la cea mai restrictiva masca la cea mai putin
+restrictiva. Spre exemplu, pentru a gasi cea mai buna cale ne intereseaza
+ca intai sa vedem daca exista un prefix cu masca 255.255.255.255(in acest
+caz next hop-ul fiind fix ip-ul cautat), ca mai apoi daca nu se gaseste
+se incearca cu 255.255.255.0, apoi cu 255.255.0.0 s.a.m.d. pana se gaseste
+un prefix care satisface ecuatia ip & masca = prefix.
+
+In cel mai rau caz tabela de rutare are toate tipurile de masti de la
+/1 la /32, iar singura masca care are un prefix aferent ip-ului este /1. In
+acest caz tabela de rutare va fi interogata de 32 de ori, facand o cautare
+binara de fiecare data. Cum cautarea binara are complexitatea O(logn),
+atunci algoritmul nostru de cautare in tabela ar avea O(32 * logn) care
+este echivalent cu O(log n). Motivul pentru care aceasta metoda functioneaza
+eficient din punct de vedere al complexitatii este pentru ca numarul maxim
+de masti posibile din vectorul de masti este constant si egal cu 32.
+
+b) Coada cu pachete
+
+Daca in procesul de dirijare nu se cunoaste mac-ul next hop-ului, atunci
+trebuie sa trimit un ARP_REQUEST de tip broadcast si sa bag pachetul
+in coada. Intrarile din coada sunt structuri ce contin pachetul ce
+trebuie dirijat ulterior, ip-ul next hop-ului care trebuie dirijat
+si interfata pe care trebuie trimis.
+
+In momentul in care am primit ARP_REPLY, dupa ce se adauga intrarea
+in tabela ARP, voi verifica daca coada este goala. Daca nu este goala
+atunci scot pachetul din varful cozii si ii caut adresa mac in
+noua tabela actualizata. Cum a fost recomandat sa folosim o coada,
+atunci se presupune ca pachetele ARP_REQUEST vor primi raspuns
+in ordinea in care au fost trimise. Daca cumva intr-un caz special ip-ul
+next hop-ului urmatorului pachet din coada se afla in tabela ARP,
+atunci il trimit si pe acesta. Cat timp sunt pachete in varful
+cozii care au next hop-ul in tabela ARP, le dirijez.
+
+4. Protocolul ICMP
+
+Se parseaza la inceput de iteratie headerul ICMP, daca acesta este
+diferit de NULL inseamna ca pachetul este tip ICMP. Apoi daca
+si numai daca este destinat router-ului si este un ICMP ECHO
+REQUEST, router-ul va raspunde sursei de unde a venit pachetul cu un
+ICMP REPLY. Insa daca nu este destinat router-ului, acesta va urma 
+procesul de forwarding pe care il urmeaza toate pachetele
+
+In timpul procesului de dirijare pentru orice pachet, se verifica
+daca TTL-ul pachetului trimis este mai mare decat 1 si daca e conform
+continua procesul. Insa daca nu este se trimite un pachet tip ICMP
+de eroare cu tipul 11 si codul 0 ce reprezinta o eroare tip
+TIME EXCEEDED.
+
+Se mai trimite un mesaj de eroare ICMP cu tipul 3 si codul 0(DESTINATION
+UNREACHABLE) in cazul in care destinatia pachetului nu a fost gasita in
+tabela de rutare.
+
+5. Algortimul incremental RFC 1624
+
+Informatiile legate de RFC 1624 au fost gasite la urmatoarea adresa:
+https://tools.ietf.org/html/rfc1624.
+
+Am ales sa folosesc ecuatia 3 si anume: HC' = ~(~HC + ~m + m'),
+unde HC este vechiul checksum al header-ului, HC' va fi noul checksum,
+m este vechea valoare a campului de 16 biti din header ce a fost
+modificat, iar m' este valoarea actualizata a acestuia
+
+In situatia noastra campul de 16 biti este ttl-ul(este de fapt uint8_t,
+insa este ok ca se incadreaza in maximul de 16 biti). Astfel
+m = TTL-ul pachetului primit
+m'= m - 1, si anume TTL-ul dupa ce a fost decrementat
+
+Am decis insa sa nu inlocuiesc m' cu (m - 1), pentru ca este mai
+robust asa si oricum nu face mare diferenta ca e totusi o singura
+operatie nesemnificativa raportat la complexitate.
+
+Motivul pentru care am ales ecuatia 3 este pentru ca se raporteaza
+usor in problema noastra si anume HC-urile reprezinta checksum-urile
+si m-urile ttl-urile. Spre exemplu la ecuatia 1 in loc de checksum
+se foloseau complementele sumei si m-as fi complicat incercand sa
+calculez acestea, cand era deja o formula mai compacta. De
+asemenea comparativ cu ecuatia 2, ecuatia 3 se asigura ca
+checksum-ul rezultat este diferit de 0xFFFF.
+
+Insa in practica, ecuatia 3 oferea un rezultat cu 1 mai mare decat
+functia checksum oferita in schelet asa ca am actualizat-o
+in felul urmator: HC' = ~(~HC + ~m + m') - 1.
+Totusi in aceasta varianta sunt sanse ca rezultatul formulei
+~(~HC + ~m + m') sa fie 0x0000, caz in care scazand 1 se
+ajunge la 0xffff. Asa ca a trebuit sa iau un if in care
+daca noul checksum generat are valoarea 0xffff sa intorc
+de fapt 0x0000 care e egal cu ~0xffff.
+

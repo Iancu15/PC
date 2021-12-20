@@ -1,0 +1,133 @@
+# Iancu Alexandru-Gabriel 324CD
+
+1. Flow-ul UI
+
+Tema s-a realizat folosind o bucla infinita care se opreste la primirea comenzii de exit.
+La inceputul fiecarei iteratii se citeste de la tastatura comanda, se scapa de enter
+(newline) si se compara cu fiecare posibilitate de comanda cu strcmp(). In momentul
+in care s-a realizat un match intre vreo comanda si sirul citit, se executa comanda
+respectiva si se trece la iteratia urmatoare. Daca nu s-a gasit nicio comanda cu numele
+respectiv, se afiseaza "INVALID COMMAND" la stdin si se trece la iteratia urmatoare.
+In momentul in care se primeste comanda exit deloghez utilizatorul, pentru ca
+server-ul sa stie ca sesiunea s-a terminat, si inchid programul.
+
+2. Autorizare
+
+Inafara while-ului declar informatiile ce ar trebui retinute de la o iteratia la alta
+si anume cookie-ul de sesiune si token-ul jwt de autorizare, acestea sunt initializate
+cu NULL lucru ce semnifica ca utilizatorul initial nu are disponibile niciuna dintre ele.
+Cand se executa o comanda corecta de logare, cookie-ul de sesiune este actualizat cu
+un sir de forma "Cookie: connect-sid:%connect-sid%", daca logarea nu s-a efectuat
+cu succes acesta va ramane NULL. Asemeni se procedeaza cu enter_library si jwt token, in
+cazul jwt token-ului se pastreaza ca sir doar acesta fara header.
+
+Cand se face logout se anunta server-ul si daca totul a fost ok, atunci se actualizeaza
+auth_cookies si jwt_token la NULL, un utilizator deconectat nu mai are nevoie de
+connect-sid-ul sesiunii terminate si de asemenea n-ar mai trebui sa aiba acces in
+biblioteca pana ce nu se logheaza cu alt cont si se acceseaza biblioteca cu acela.
+Pentru ca exista comanda de logout, am decis sa nu las utilizatorul sa se logheze cu
+alt cont daca e deja conectat intr-un cont, acesta ar trebui intai sa se delogheze
+ca mai apoi sa se conecteze cu noul cont. Server-ul am observat ca nu verifica
+acest aspect si l-ar lasa sa se conecteze, insa daca l-as lasa si eu comanda
+logout ar deveni redundanta.
+
+Pentru a nu trimite cereri fara rost, verific daca utilizatorul are autorizare
+pentru comanda respectiva si anume daca cookie-ul de sesiune stocat sau
+token-ul de autorizare sunt diferite de NULL. Daca acestea sunt NULL,
+atunci server-ul mi-ar trimite oricum un mesaj de eroare de tip bad authorization
+prin care mi se spune ca nu am autorizarea suficienta pentru citire sau scriere
+in zona respectiva. Asa ca pur si simplu afisez eu mesajul de eroare pe care
+l-as primi oricum si continui rularea programului. Fac aceste verificari
+inainte de prompt-uri pentru ca eu consider ca nu ar fi ok spre ex. sa
+scrie utilizatorul toate campurile cartii pe care doreste sa o adauge
+ca apoi sa afle ca nu s-a conectat, asa ca afisez mesajul direct dupa
+introducerea comenzii de add_book(la fel la delete_book, get_book...).
+
+3. Crearea de cereri
+
+Cererile le creez appenduind cu strcat() la un char* numit message alocat
+dinamic pe care il voi intoarce la terminarea rularii functiei aferente
+cererii(generate_post/get/delete_request). Ma mai folosesc si de un line
+ca in laboratorul 10 pentru a putea utiliza facilitatile functiei sprintf
+care ajuta in scrierea usoara a unor formate sau a unor numere pe care
+le am stocate in format %d.
+
+Functiile sunt cat mai generale pentru a putea fi apelate pentru diversele
+comenzi implementat, mesajul rezultat respecta formatul cererilor aferente.
+
+Precizari:
+-la get si delete am un camp id care este singurul query folosit de comenzi,
+daca parametrul este -1, atunci se va forma mesajul fara query;
+-token-ul jwt este dat ca parametru, fiind adaugat la finalul formatului
+Authorization: Bearer %token%;
+-cookie-ul dat ca parametru este cu tot cu header asa ca il appenduiesc
+doar pe el, acesta este prezent doar in functia post pentru login
+si get pentru logout, delete neavand nevoie de cookie-uri in aceasta
+implementare;
+-am decis sa las si optiunea de a pune parametru NULL la payload pentru
+generalitate, desi nu am o astfel de cerere in implementare.
+
+4. Trimiterea cererii
+
+Server-ul tine conexiunea in viata doar 5 secunde si ajungeam sa primesc
+un mesaj gol pe care daca il procesam ajungeam la segmentation fault. Asa
+ca am gasit drept work around deschiderea conexiunea inainte de trimiterea
+cererii si inchiderea acesteia dupa ce am primit raspunsul de la server.
+Refacand conexiunea pentru fiecare cerere ma asigur ca mereu voi primi
+raspunsul pentru cerere.
+
+5. JSON
+
+Pentru parsare si creare de JSON am folosit biblioteca parson. Aceasta
+o folosesc pentru:
+-crearea json-ului ce contine campurile username si password pentru
+comenzile de register si login;
+-crearea json-ului ce contine detaliile cartii cu campurile title, author,
+genre, publisher, page_count pentru comanda add_book;
+-parsarea jwt token-ului din json-ul cu campul "token";
+-parsarea array-ului de carti primite prin comanda get_books si afisarea
+id-ului si titlului cartilor pe fiecare linie prin parsarea JSON_Array-ului;
+-parsarea json-ului cu cartea aferenta id-ului din comanda get_book si
+afisarea campurilor alaturi de denumirea acestora(acesta este primit
+ca un array asa ca trebuie intai sa il fac obiect);
+-parsarea json-ului de eroare cu campul "error", dat in cazul raspunsurilor
+cu codul 4XX.
+
+Motivul pentru care am folosit biblioteca parson este pentru simplitatea
+acesteia. Pentru parsarea unui sir se foloseste functia json_parse_string()
+ce intoarce un JSON_Value*, pentru obtinerea obiectului aferent valorii
+se foloseste functia json_object(). Odata ce ai obiectul poti sa accesezi
+campurile direct cu json_object_get_string, json_object_get_numeral sau
+ce tip de date este reprezentat in camp, functiile avand drept primul
+parametru obiectul json si al doilea un string cu numele campului.
+
+Pentru parsarea array-ului se foloseste json_value_get_array() pentru a face
+rost de JSON_Array* prin intermediul unui JSON_Value*. Apoi poti face
+rost de numarul de elemente din array cu json_array_get_count() si iti
+poti lua un contor intr-un for cu care parcurgi tot array-ului. Pentru
+a face rost de JSON_Object-ul de la pozitia n din array se foloseste
+json_array_get_object() cu primul parametru JSON_Array* si al doilea
+pozitia, indexarea se face de la 0.
+
+Pentru serializarea unui json se creeaza un JSON_Value* cu functia
+json_value_init_object() si se face rost de JSON_Object* cu
+json_value_get_object(). Apoi se folosesc functiile de set ce se aseamana
+cu cele de get discutate mai sus, diferenta fiind ca mai e un al treilea
+parametru ce reprezinta valoarea campului. Apoi dupa ce s-au terminat
+de adaugat campurile, se poate face rost de json in format text dand
+JSON_Value* ca parametru functiei json_serialize_to_string().
+
+Pentru mai multe informatii accesati pagina de github a lui Krzysztof Gabis:
+https://github.com/kgabis/parson
+
+6. Raspuns de succes/eroare
+
+Daca raspunsul are codul 2XX il consider ca fiind de succes, procesez
+informatiile din raspuns daca am de procesat, daca nu doar afisez faptul
+ca cererea s-a efectuat cu succes(ex: functia register). Raspunsurile
+cu codul de tip 4XX sunt considerate de esec si parsez json-ul de eroare
+si afisez continutul acestuia la stdin, json-ul de eroare se afla din
+ce am observat mereu in aceeasi pozitie pentru o anumita cerere(16 sau 19)
+asa ca implementarea va trimite mesajul de eroare corect(in caz de esec)
+pentru orice comanda la orice moment de timp pentru configuratie curenta
+a server-ului si formatul curent de raspunsuri.

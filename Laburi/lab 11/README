@@ -1,0 +1,83 @@
+Output Server:
+
+---------- MESSAGE FOLLOWS ----------
+MIME-Version: 1.0
+FROM: Cineva <mailfrom@gmail.com
+TO: Altcineva <rcptto@gmail.com
+Subject: Ceva
+Content-Type: multipart/mixed; boundary=abc
+X-Peer: 127.0.0.1
+
+--abc
+Content-Type: text/plain
+Acesta este un mail
+chiar cu mai multe linii
+1. adaasdasd
+2. agafadf
+--abc
+Content-Type : text/plain
+Content-Disposition: attachment; filename="file.txt"
+
+This is an attachment.
+
+--abc
+------------ END MESSAGE ------------
+
+Output Client:
+
+Am primit: 220 alex Python SMTP proxy version 0.2
+
+Trimit: HELO localhost
+Am primit: 250 alex
+Trimit: MAIL FROM: <mailfrom@gmail.com>
+Am primit: 250 Ok
+Trimit: RCPT TO: <rcptto@gmail.com>
+Am primit: 250 Ok
+Trimit: data
+Am primit: 354 End data with <CR><LF>.<CR><LF>
+Trimit: MIME-Version: 1.0
+FROM: Cineva <mailfrom@gmail.com
+TO: Altcineva <rcptto@gmail.com
+Subject: Ceva
+Content-Type: multipart/mixed; boundary=abc
+
+--abc
+Content-Type: text/plain
+Acesta este un mail
+chiar cu mai multe linii
+1. adaasdasd
+2. agafadf
+--abc
+Content-Type : text/plain
+Content-Disposition: attachment; filename="file.txt"
+
+This is an attachment.
+
+--abc
+.
+Am primit: 250 Ok
+Trimit: QUIT
+Am primit: 221 Bye
+
+===Explicatie scurta===
+
+Trimite mail-ul precizand intai antetele:
+-versiunea de MIME;
+-header-ul FROM: in care precizez numele clientului si adresa sa;
+-header-ul TO: in care precizez numele si adresa destinatarului;
+-header-ul Subject: cu subiectul mail-ului;
+-header-ul Content-type: cu informatii legate de tipul continutului
+multipart/mixed inseamna ca e un mesaj mixt, in cazul nostru
+continand un camp de text si un atasement text
+boundary=abc ii zice cum campul de text e delimitat de caracterele
+abc
+
+Apres un enter gol si incep corpul de text incepand cu
+boundary-ul abc. Expun headerele corpului si anume tipul continutului
+- text simplu. Scriu mesajul si il inchei cu boundary-ul respectiv.
+
+Pentru atasement o sa am headerele legate de tipul continutului, care
+tot text simplu este, si header-ul Content-Disposition in care se
+precizeaza ca continutul este atasament si path-ul fisierului.
+Apoi marginit de newline-ul adaug continutul fisierului.
+Pun ultimul boundary si inchei tot mail-ul cu ".".

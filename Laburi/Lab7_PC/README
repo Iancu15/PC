@@ -1,0 +1,27 @@
+Client
+
+Clientul creeaza un socket pe care sa vorbeasca de tip TCP si seteaza
+ip-ul server-ului si port-ul pe care acesta il foloseste sa intercepteze
+conexiuni. Apoi se creeaza conexiunea cu server-ul prin intermediul socket-ului.
+Apoi cat timp primeste caractere la STDIN, acesta trimite mesajul catre server
+prin intermediul socket-ului si receptioneaza mesajul trimis inapoi.
+
+Server
+
+Creeaza un socket pe care sa primeasca conexiuni si ii ofera un port pe care
+sa intercepeteze cererile de la clienti si ii spune sa accepte pachete de la orice
+adresa pe acel port. Apoi asociaza adresa server-ului cu socket-ul creat pentru a
+putea fi apelat.
+
+a) Echo
+
+Server-ul ii spune socket-ului sa receptioneze un singur client si sa creeze o conexiune
+cu acesta. Apoi cat timp client-ul trimite mesaje acesta le va citi si le va trimite 
+inapoi folosind aceeasi conexiune pentru ambele actiuni.
+
+b) Chat
+
+Server-ul ii spune socket-ului sa receptioneze doi clienti si sa accepte cate o conexiune
+de la fiecare. Apoi cat timp primul client trimite mesaje, server-ul va redirectiona
+mesajele catre cel de-al doilea client. Astfel conexiunea primului client va fi folosita
+pentru citire de octeti, pe cand cea de a doua pentru trimitere de octeti.

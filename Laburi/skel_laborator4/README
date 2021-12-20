@@ -1,0 +1,31 @@
+Pentru fiecare pachet primit verific checksum-ul, daca cumva
+checksum-ul calculat de router e diferit de cel din header,
+atunci se arunca pachetul. De asemenea daca cumva
+Time To Live-ul este 0 se arunca pachetul pentru ca
+asta inseamna ca pachetul a ajuns la termenul de expiratie.
+
+Caut cea mai buna ruta folosindu-ma de tabela de rutare.
+Pentru fiecare ruta din tabela de rutare verific daca
+prima retea din ruta are prefix-ul de retea egal cu
+prefix-ul calculat facand &-logic intre ip-ul destinatie
+si masca de retea a retelei verificate. In cazul in care
+se verifica, atunci se compara masca retelei cu masca
+retelei de pe cea mai buna ruta descoperita
+pana in acel moment si daca masca retelei curente e mai mare
+atunci inseamna ca reteaua curenta va fi cea mai buna ruta
+la momentul curent. (cu cat masca de retea e mai mare, cu
+atat prefixul retelei e mai aproape de ip-ul de retea
+pe care il cautam, in cazul in care se respecta egalitatea)
+
+Daca nu s-a gasit nicio ruta, atunci se arunca pachetul.
+In cazul in care s-a gasit, decrementam Time To Live-ul
+pentru ca pachetul a trecut cu succes prin reteaua curenta.
+Recalculam checksum-ul pentru ca s-a modificat TTL-ul.
+
+Cautam intrarea ARP care are ip-ul urmatorului hop de pe ruta
+gasita. Daca nu s-a gasit in tabela, atunci aruncam pachetul.
+In caz contrar, actualizam mac-ul destinatie din header cu
+cel al urmatorului hop si trimitem pachetul prin interfata
+rutei pentru a ajunge la urmatorul hop.
+
+

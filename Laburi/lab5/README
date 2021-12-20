@@ -1,0 +1,51 @@
+1) Ping
+
+Se initializeaza pachetul spre a fi trimis. Se iau referinte catre
+headerele protocoalelor: Ethernet, IP, ICMP. Se initializeaza
+headerul ethernet-ului. Apoi pentru fiecare pachet trimis se
+completeaza campurile pentru IP si ICMP.
+
+Pentru IP:
+-versiunea 4 ca e IPv4
+-ihl = 5 pentru ca headerul este de lungime 5*4 bytes
+-totlen este suma dintre dimensiunile headerelor IP si ICMP
+pentru ca headerul protocolului ICMP este in continuarea celui IP
+-id-ul este ales aleatoriu
+-time to live este standardul 64
+-de asemenea se mentioneaza printr-un bit de 1 ca se foloseste
+protocolul ICMP pe langa IP
+-se adauga adresele IP de destinatie si sursa
+-se calculeaza checksum-ul la final
+
+Pentru ICMP:
+-code 0 si type 8 ce spun ca nu e nicio problema
+-secventa pachetului trimis pentru a se diferentia de restul care vor
+fi trimise
+-id-ul care este id-ul procesului
+-se calculeaza checksum-ul
+
+Se trimite pachetul cu headerele completate si apoi se asteapta un
+pachet de reply. Apoi se afiseaza din pachetul reply informatiile care
+ne intereseaza si anume numarul de octeti primiti, adresa sursa a
+retelei care a trimis pachetul, secventa pachetului si ce time to
+live are. De asemenea dupa ce se trimite pachetul pana se primeste
+cel de reply se cronometreaza cat a durat pana a ajuns pachetul.
+
+Se trimite ping de oricate ori doreste utilizatorul.
+
+2) Traceroute
+
+Se initializeaza headerul de ethernet. Apoi pentru fiecare pachet se
+completeaza asemanator headerele de IP si ICMP. Insa diferenta este
+ca de aceasta data time to live-ul se incrementeaza constant pentru
+fiecare pachet nou trimis, incepand cu valoarea initiala 1. Astfel
+primul pachet ajunge la urmatorul hop pe ruta, apoi urmatorul
+pachet va avea ttl 2 si astfel va ajunge la al 2-lea hop pe ruta
+si tot asa pana se ajunge la pachetul destinatie, unde se opreste ruta.
+
+Se trimit pachete in stilul stop&wait, astfel intai se asteapta raspunsul
+de la reteaua i, ca apoi sa se trimite pachetul catre reteaua (i + 1) de
+pe traseu. Programul se opreste din trimis pachete in momentul in care
+pachetul reply are type si code egale cu 0 ceea ce inseamna ca s-a ajuns
+la destinatie. Daca nu se ajunge la destinatie dupa 64 de pachete trimise,
+atunci se opreste singur programul din trimis pachete.

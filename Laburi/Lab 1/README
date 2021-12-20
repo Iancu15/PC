@@ -1,0 +1,16 @@
+1) cat.c
+
+Am adaugat eroare pentru scriere si un newline la final
+sa imi fie mai usor la depanat tac. In rest codul original
+era bun si n-aveam ce modifica.
+
+2) tac.c
+
+Am trecut prin fisier litera cu litera si daca gaseam
+un newline(valoarea 10 in ASCII pt linux), atunci adaugam
+offset-ul la care se afla in vectorul de pozitii v.
+
+Dupa ce am procesat pozitiile, le parcurg de la ultima
+la prima si citesc un numar de caractere egal cu diferenta
+dintre pozitia urmatoare si pozitia curenta pentru a citi doar
+linia corespunzatoare.

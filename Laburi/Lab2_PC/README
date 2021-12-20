@@ -1,0 +1,22 @@
+1) send.c
+
+Trimit numele fisierului si continui daca primesc confirmare.
+Citesc din fisierul pe care il are sender-ul cate 1400 octeti
+spre a-i trimite intr-o structura alaturi de lungimea mesajului
+care imi este de data de fread (tot 1400 ar trebui sa fie daca
+nu e ultima citire). 
+
+Daca e ultima citire inseamna ca trebuie sa fie mai putin de 1400 
+octeti cititi(0 atunci cand se imparte exact la 1400) si se iese 
+din while. Trimit mesajul de terminare, care este 0, si daca primesc 
+confirmare, atunci a rulat fara eroare.
+
+2) recv.c
+
+Daca primesc numele fisierului trimit mesajul de confirmare. Apoi
+creez un nou fisier cu numele fisierului primit cu extensia ".bk"
+pentru scriere.
+
+Cat timp primesc cu succes mesaje, trimit mesajul de confirmare si
+scriu in fisierul ".bk". Daca s-a scris cum trebuie continui.
+Cand am primit mesajul de terminare ies din while.

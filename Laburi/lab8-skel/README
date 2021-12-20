@@ -1,0 +1,29 @@
+Server
+
+Se creeaza socket-ul, apoi se face bind intre socket si port-ul pe care se doreste sa
+se primeasca conexiuni. Se adauga socket-ul la multimea de file descriptori pentru
+citire. Apoi cand se primeste un mesaj pe vreunul din socketii de citire:
+
+1) Daca se primeste pe socket-ul de conexiuni, atunci se accepta conexiunea
+pe un alt socket creat care se adauga la multimea de socketi de citire
+
+2) Altfel inseamna ca s-a primit un mesaj de la unul din clienti. Daca dimensiunea
+mesajului este 0 inseamna ca clientul a incheiat conexiunea si il scot din multimea
+de socketi de citire. Altfel daca nu s-a primit vreo eroare inseamna ca am primit
+mesajul cu succes. Extrag din mesaj socket-ul pe care se doreste sa fie trimis 
+mai departe, daca mesajul nu incepe cu un numar urmat de un spatiu atunci se
+ignora mesajul. Restul mesajului excluzand newline-ul de la final este trimis
+treptat catre clientul destinatie.
+
+Client
+
+Creez socket-ul pe care doresc sa comunic cu server-ul si il conectez la adresa
+si port-ul pe care acesta primeste conexiuni. Creez multimea de file descriptori de
+citire in care adaug fereastra de standard input si socket-ul pe care l-am
+conectat la server. Apoi cand se primeste un mesaj pe vreun file descriptor:
+
+1) Daca file descriptor-ul e stdin, atunci se citeste intr-un buffer sirul
+de caractere. Se trimite apoi mesajul treptat catre server.
+
+2) Daca file descriptor-ul e socket-ul serverului, atunci afisam mesajul
+pe ecran.

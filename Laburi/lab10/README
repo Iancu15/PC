@@ -1,0 +1,66 @@
+1) GET REQUEST
+
+Mesajul de get se incepe cu keyword-ul GET urmat de url si parametrii
+interogarii daca exista si HTTP/1.1 la final de linie.
+A doua linie este este header-ul pentru host-ul celui care trimite
+mesajul, campul poate fi domain name-ul sau ip-ul acestuia.
+Ultimul header, care este optional, este cel pentru cookies. Fiecare
+cookie inafara de ultimul este afisat urmat de un ';'.
+
+2) POST REQUEST
+
+Mesajul incepe cu keyword-ul POST, urmat de url si apoi de HTTP/1.1.
+Host-ul pe urmatoarea linie ca la get. Apoi un header content-length
+unde campul va fi numarul de octeti ce urmeaza a fi trimisi.
+Urmeaza content-type ce indica tipul de continut. Se poate
+adauga si header-ul de cookies ca la get.
+
+Nu in cele din urma, sunt afisate datele ce urmeaza a fi trimise.
+Fiecare linie este separata de un '&'(functia este astfel folosita
+doar pentru text tip url-encoded) si prima linie este precedata
+de un newline.
+
+3) EX:
+
+a) EX1
+
+Deschid conexiunea pe care voi comunica cu server-ul pe portul 8080.
+Creez mesajul de GET cu campul host drept ip-ul meu(al clientului) si
+url-ul server-ului /api/v1/dummy cum este specificat in enunt.
+Trimit mesajul la server pe socket-ul respectiv si voi primi
+mesajul pe acelasi socket.
+
+Mesajul primit este unul de succes(200 OK) avand drept continut
+string-ul "Hello there!".
+
+b) EX2
+
+Creez un mesaj de POST cu 2 perechi cheie-valoare: dummy1=ceva da,
+dummy2=altceva. (perechile fiind tip url-encoded)
+De asemenea mai creez niste cookies de test: a=5; b=7.
+Host-ul si url-ul la fel ca la punctul precedent. Content-type
+il setez la application/x-www-form-urlencoded pentru ca trimit
+perechi data-valoare.
+
+Mesajul este trimis cu succes si primesc inapoi perechile
+cheie-valoare trimise in format JSON.
+
+c) EX3
+
+Trimit un mesaj POST la /api/v1/auth/login pentru a ma loga.
+Numele si parola le trimit url-encoded: username=student&password=student.
+Primesc un raspuns OK ca m-am logat. Primesc si sid-ul pe care il voi
+folosi pentru a ma conecta de acum incolo drept cookie alaturi
+de path-ul(care este in root) si preferinta serverului pentru HTTP.
+
+d) EX4
+
+Accesez url-ul /api/v1/weather/key cu un GET cu cookie-urile de la pasul
+precedent(inclusiv sid-ul) pentru ca server-ul sa ma recunoasca
+si sa-mi ofere key-ul cautat. Key-ul il primesc in format JSON
+in body-ul raspunsului.
+
+e) EX5
+
+Ma deloghez trimitand un mesaj de GET la /api/v1/auth/logout cu
+cookie-urile aferente sesiunii mele. Primesc ca raspuns un mesaj de OK.

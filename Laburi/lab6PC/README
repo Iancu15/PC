@@ -1,0 +1,27 @@
+Client:
+
+Deschid socket-ul cu care voi comunica cu serverul si deschid
+fisierul din care voi lua datele spre a fi trimise. In structura
+aferenta adresei de socket voi descrie protocolul folosit(IPv4),
+adresa ip a serverului si portul pe care ma va primi.
+
+Citesc din fisier cat timp sunt date si le stochez intr-un buffer.
+Fiecare buffer citit il trimit pe socket-ul deschis impreuna cu
+structura adresei de socket. Cand nu mai sunt date in fisier
+trimit un pachet gol pentru a informa serverul ca nu mai sunt
+pachete de trimis.
+
+Server:
+
+Deschid socket-ul prin care voi primi date de la client. Header-ul
+adresei de socket va avea specificat protocolul(IPv4), portul pe
+care se vor primi datele si faptul ca se pot primi pachete pe
+acel port de la orice adresa. Apoi leg socket-ul deschis cu
+adresa de socket aferenta, acest lucru fiind necesar la primirea
+de pachete.
+
+Deschid fisierul in care vor scrie datele primite de la client.
+Accept pachete ce au fost primite pe port-ul selectat prin intermediul
+socket-ului. Scriu apoi in fisier datele primite. Daca se primeste un
+pachet gol(de 0 octeti), atunci inseamna ca am fost anuntat ca nu mai
+sunt pachete de citit si ma opresc.

@@ -1,0 +1,47 @@
+COUNT = 10000
+SPEED = 1
+DELAY = 10
+
+START-STOP:
+real	0m5,318s
+user	0m0,005s
+sys	0m0,058s
+
+COUNT = 10000
+SPEED = 1
+DELAY = 20
+
+START-STOP:
+real	0m6,315s
+user	0m0,013s
+sys	0m0,046s
+
+COUNT = 10000
+SPEED = 2
+DELAY = 1
+
+START-STOP:
+real	0m3,295s
+user	0m0,017s
+sys	0m0,041s
+
+COUNT = 10000
+SPEED = 5
+DELAY = 1
+
+START-STOP:
+real	0m2,617s
+user	0m0,020s
+sys	0m0,032s
+
+Concluzie: Timpul de rulare este direct proportional cu delay-ul
+si invers proportional cu viteza.
+
+Coruptibilitate
+
+COUNT = 1000
+
+CORRUPT = 0 => 0 pachete corupte
+CORRUPT = 20 => 185/204/196 pachete corupte, valoarea se invarte
+in jurul lui 200 ce reprezinta 20% din cele 1000 pachete trimise
+CORRUPT = 100 => 1000 pachete corupte

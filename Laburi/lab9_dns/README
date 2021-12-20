@@ -1,0 +1,107 @@
+get_ip()
+
+Face o cerere pentru ip folosind functia getaddrinfo. Ii dau ca parametrii
+dns name, structura addrinfo ce ii spune ca fac cerere pe baza de nume
+(AI_CANNONNAME) si folosesc TCP(SOCK_STREAM) si pointer la rezultatul pe
+care il va da.
+
+Apoi cat timp mai sunt ip-uri rezultat daca e:
+-ipv4 transform adresa din internet number in char* si o stochez intr-un
+buffer de 16 octeti(3 pentru punct, 3*4 = 12 pentru cifre si 1 pt terminatorul
+nul), afisez rezultatul
+-ipv6 stochez rezultatul intr-un buffer de 46 octeti - forma extinsa are 7 de ':',
+16 octeti * 2 caractere pt fiecare octet stocat in format hexazecimal + 1 terminator
+null => 40 de caractere (nu stiu care e treaba cu aia 6 in plus) - afisez rezultatul
+
+get_name()
+
+Folosesc functia getnameinfo cu parametrii: structura sockaddr(AF_INET ca primim ipv4,
+portul setat implicit 12345 si ip-ul dat ca parametru ca internet number), buffer
+pentru numele host-ului cautat si buffer pentru service-ul aferent(cu dimensiune
+20). Afisam host-ul si service-ul la stdout.
+
+TASKUL 2
+
+a)
+
+single-v4.protocoale.club -> 127.0.0.1
+single.protocoale.club -> 127.0.0.1
+multi-v4.protocoale.club -> 127.1.1.1
+127.2.2.2
+127.3.3.3
+127.4.4.4
+multi.protocoale.club -> 127.1.1.1
+127.3.3.3
+127.2.2.2
+127.4.4.4
+protocoale.protocoale.club -> 127.42.42.42
+
+b)
+
+single-v6.protocoale.club -> ::1
+single.protocoale.club -> ::1
+multi-v6.protocoale.club -> ::1
+::3
+::4
+::2
+multi.protocoale.club -> ::1
+::4
+::2
+::3
+
+c)
+
+protocoale.club.	300	IN	MX	10 alt1.gmail-smtp-in.l.google.com.
+protocoale.club.	300	IN	MX	20 alt2.gmail-smtp-in.l.google.com.
+protocoale.club.	300	IN	MX	30 alt3.gmail-smtp-in.l.google.com.
+
+d)
+
+Lipsesc RR autoritare, am incercat youtube.com
+;; flags: qr rd ra; QUERY: 1, ANSWER: 3, AUTHORITY: 0, ADDITIONAL: 1
+
+e)
+
+dig @201.144.54.2 google.com
+google.com.		296	IN	A	142.250.72.238
+dig @195.7.64.3 google.com
+google.com.		46	IN	A	142.250.74.142
+dig @201.44.177.131 google.com
+google.com.		50	IN	A	172.217.30.174
+
+Cred ca nu primim acelasi ip pentru ca google are mai multe servere si astfel mai multe
+ip-uri.
+
+f)
+
+Fisierul de intrare este f, cel de iesire este result_f.
+
+g)
+
+Primeste root-serverele de la 127.0.0.53 care au dns ., apoi de la d.root-servers.net primeste
+urmatoarea lista de servere care au dns club., din aceasta apeleaza ns6.dns.nic.club. Urmatoarea
+lista este pentru protocoale.club. dintre care dns2.registrar-servers.com da lista pentru
+dorinel.protocoale.club., apoi se apeleaza potato.dfilip.xyz si se obtine lista finala in
+care se observa ip-urile pentru nume:
+test.dorinel.protocoale.club. 300 IN	A	127.0.42.0
+test.dorinel.protocoale.club. 300 IN	A	127.0.0.42
+
+protocoale.club: 127.0.0.5 -> e.root-servers.net -> ns5.dns.nic.club -> dns2.registrar-servers.com
+dorinel.protocoale.club: 127.0.0.53 -> j.root-servers.net -> ns2.dns.nic.club ->
+dns2.registrar-servers.com -> potato.dfilip.xyz
+
+h)
+
+127.0.0.42
+0.0.42.127.in-addr.arpa. 0	IN	PTR	localhost.
+
+8.8.8.8
+8.8.8.8.in-addr.arpa.	85380	IN	PTR	dns.google.
+
+Cererea se face pe numele de domenii 0.0.42.127.in-addr.arpa. si 8.8.8.8.in-addr.arpa.
+Presupun ca numerele din componenta ip sunt in ordine inversa pentru ca se afiseaza in network
+byte order.
+
+l)
+
+In poza wireshark din director.

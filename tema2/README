@@ -1,0 +1,159 @@
+# Iancu Alexandru-Gabriel 324CD
+
+1. Protocol
+
+A. structura pachetelor
+
+Am decis sa folosesc o structura pentru fiecare combinatie transmitere:
+i)pachetul UDP trimis de la clientul UDP la server
+
+Pachetele primite de la clientii UDP respecta formatul: topic, tip de date, continut,
+conform enuntului. Asa ca am creat o structura ce contine aceste elemente. De asemenea
+dimensiunile fiecarui element au fost specificate in enunt: topicul de 50 de octeti,
+tipul de date de 1 octet si continutul de 1500 de octeti.
+
+ii)pachetul TCP trimis de la clientul TCP la server
+
+Aceste pachete dau cererile de subscribe si unsubscribe de la clientul TCP la server.
+Asa ca acestea contin un camp de 1 octet numit command_index care specifica care
+comanda a fost folosita: 0 subscribe, 1 unsubscribe. De asemenea trebuie sa contina
+si un camp de topic de 50 de octeti si un octet rezervat pentru optiunea SF: 0 inseamna
+ca e dezactivata, 1 ca este activata. Optiunea SF este prezenta si daca s-a trimis un
+pachet de unsubscribe, SF in acest caz este setat pe 0. Prezenta acestuia nu conteaza
+pentru ca are o dimensiune mica(1 octet) si server-ul va stii sa o acceseze doar
+pentru pachetele de tip subscribe.
+
+Id-ul clientului nu este trimis cu acest pachet, se considera de datoria server-ului sa
+salveze local un tabel cu corespondenta id - socket. Acesta stiind care client a trimis
+pachetul in functie de socket-ul pe care a primit pachetul.
+
+iii)pachetul TCP trimis de la server la clientul TCP
+
+Server-ul va trimite pachetul UDP primit de la clientii UDP fara sa-l modifice, fiind
+responsabilitatea clientului TCP sa proceseze continutul acestuia. De asemenea alaturi
+de pachet se va trimite port-ul(dimensiune 2 octeti) si ip-ul(in format string de lungime
+16 octeti -> 3 puncte + 3 cifre * 4 numere + terminatorul nul) clientului UDP. Port-ul si
+ip-ul vor fi preluate de server prin structura sockaddr_in si copiate in structura pachetului
+alaturi de pachetul UDP.
+
+B. trimiterea si primirea pachetelor
+
+i) UDP
+
+Clientul UDP va trimite un pachet de dimensiune 50 + 1 + 1500 = 1551, conform enuntului. Astfel
+server-ul va face recieve de fix 1551 octeti pentru a primi un pachet pe rand. Astfel este
+de datoria clientului UDP sa respecte dimensiunea de 1551 de octeti(ceea ce pare ca o face din
+ce am testat). Fata de TCP, in cazul UDP-ul nu o sa avem parte de trunchieri si concatenari asa
+ca implementarea este straightforward si anume un apel pentru un pachet.
+
+ii) TCP
+
+Serverul si clientul TCP vor primi si vor trimite pachete asa ca am decis sa fac functii generale
+de recv(recv_all) si send(send_all) pentru a fi folosite de amandoi. Fata de UDP, avem parte
+de trunchieri asa ca va trebui sa fac apeluri repetate de recv() si send() pana cand au fost
+primiti/trimisi toti octetii. La fiecare urmator apel trebuie sa mut pointer-ul din buffer
+in functie de cati octeti am primit/trimis, astfel incat sa nu am parte de suprapuneri.
+
+La trimitere am dimensiunea data la intrare si pentru fiecare wc trimis, la urmatorul send()
+ii iau in considerare si trimit doar len - toti wc anterior(bytes_sent). Astfel
+ma asigur ca trimit fix cat trebuie. La primire insa sunt sanse din cauza fluxului de date
+sa primesc pachete concatenate, asa ar trebui sa stiu dimensiunea pachetului pentru a primi
+doar pachetul asteptat. Asa ca la trimitere inainte de pachetul propriu-zis, trimit 4 octeti
+in network byte order ce contin lungimea pachetului. La primire intai citesc lungimea
+sirului si o convertesc in host byte order, apoi citesc repetat cu recv pana cand numarul de
+octeti cititi(excluzand lungimea de 4 octeti) este egal cu lungimea sirului, astfel voi
+ajunge sa citesc doar cat trebuie.
+
+C. Reguli si interpretare
+
+Am realizat niste reguli clare pe care serverul si clientul TCP trebuie sa le urmeze in
+comunicare. O prima regula este ca dupa ce clientul TCP se conecteaza la server, este
+de datoria sa sa ii trimita id-ul ca server-ul mai apoi sa il citeasca si sa il puna alaturi
+de socket in lista clienti pentru a stii cu cine vorbeste prin socket-ul respectiv. Astfel
+in momentul in care altcineva incearca sa se conecteze de pe acelasi id, server-ul observa
+ca are deja id-ul respectiv conectat si ii trimite un mesaj de EXIT si anume "still connected",
+cand un client TCP primeste aceste mesaj el trebuie sa se inchida. Server-ul face diferenta
+intre cineva care s-a reconectat si cineva care se conecteaza simultan prin starea
+de conectivitate a clientului stocata alaturi de id si actualizata constant. Astfel starea
+de conectivitate va fi 0(deconectat) cand un client se deconecteaza, asa ca data viitoare
+cand se va conecta nu va primi mesaj de EXIT.
+
+Alt mesaj de EXIT pe care il da serverul este "server shutdown", in urma primirii acestui
+mesaj clientul TCP trebuie sa se inchida. Dupa ce serverul primeste de la tastatura
+comanda "exit", acesta trimite mesajul de EXIT tuturor clientilor TCP conectati la el
+si inchide conexiunea cu acestia, urmand ca mai apoi sa se inchida pe sine.
+
+Clientul se deconecteaza cand primeste comanda "exit" de la tastatura, inainte sa se inchida
+trimite mesajul "stop connection" catre server pentru ca acesta sa opreasca conexiunea
+si sa actualizeze starea de conectivitate a clientului in tabela.
+
+In cazul in care pachetul primit de server de la client nu este un mesaj de EXIT, atunci
+se considera ca este un pachet structura explicat la punctul A. In acelasi fel daca
+clientul nu primeste un mesaj de EXIT de la server, se considera ca e un pachet structura.
+De la clientul UDP se primesc doar pachete structura asa ca server-ul are toata
+certitudinea ca nu va primi altceva si doar creeaza pachetul structura pentru clientul
+TCP si trimite pachetul respectiv mai departe la clientul TCP.
+
+2. Structuri auxiliare de stocare
+
+Sunt 3 structuri de stocare folosite in cadrul implementarii server-ului:
+
+A. Registrul de topicuri
+
+Registrul de topicuri are o intrare pentru fiecare topic. In interiorul intrarii se
+regaseste un sir cu numele topic-ului si o lista de clienti. Lista de clienti
+reprezinta clientii care sunt abonati la topicul respectiv si pentru care se
+cunoaste id-ul, socket-ul pe care se comunica cu acestia si starea lor de
+conectivitate. Daca un topic nu are o intrare in registrul de topicuri, inseamna
+ca niciun client nu a fost vreodata abonat la el(pentru ca intrarile de topic-uri
+se adauga odata cu abonarea clientilor la un topic). Insa inversa nu e mereu adevarata,
+pentru ca un topic poate sa nu mai aiba niciun abonat la momentul curent, dar sa
+aiba o intrare in registru. Atata timp cat a fost cineva la un moment dat abonat
+la el, intrarea pentru topic s-a creat.
+
+Registrul este folosit pentru a cauta clientii abonati la topic-ul aferent
+unui pachet si trimiterea pachetului catre acesti clienti daca sunt conectati.
+Daca nu sunt conectati atunci vor fi trimisi intr-un punct ulterior in cazul
+in care optiunea de store-forward este activata. Astfel pentru fiecare client
+din lista de clienti se retine si daca are optiunea SF activata pentru topicul
+respectiv.
+
+B. Lista/tabela de clienti
+
+Este retinuta o tabela cu toti clientii, pentru fiecare client fiind stiut id-ul,
+socket-ul pe care se comunica cu acesta si starea de conectivitate. Scopul
+initial pentru care a fost creat a fost pentru a stoca id-ul corespunzator unui
+socket pentru a putea afisa id-ul in momentul in care un client aferent unui
+socket se deconecteaza.
+
+Ulterior am gasit utilitate in a folosi intrarile din tabela in registrul
+de topicuri, in listele de clienti corespondente topicurilor. Cum lista de
+clienti e formata din pointeri la structura, atunci puteam sa folosesc
+acelasi pointer si la registrul de topic-uri. Salvand astfel spatiu pe heap
+pentru ca desi un client era abonat la mai multe topicuri, in fiecare lista de clienti
+a intrarii topicului este folosita aceeasi structura printr-un pointer la aceasta.
+
+De asemenea actualizez constant lista de clienti, asa ca registrul de topicuri
+va avea liste de clienti actualizate in timp real. In momentul in care un
+client se deconecteaza si actualizez lista de clienti, listele de clienti din registru
+vor avea structura actualizata. Pe langa starea de conectivitate, si socket-ul
+se actualizeaza periodic la noul socket prin care clientul reconectat comunica
+cu serverul.
+
+C. Lista de pachete
+
+Lista de pachete este folosita pentru a retine pachetele spre a fi trimise
+ulterior. Pentru fiecare intrare de pachet retin pachetul propriu-zis si numarul
+de clienti catre care mai trebuie trimis. La creare, numarul de clienti este
+cati clienti sunt abonati la topic-ul respectiv la acel moment, aceasta
+informatie reprezinta numarul de clienti din lista de clienti corespondenta
+intrarii topicului din registrul de topic-uri.
+
+Pentru fiecare client catre care se trimite pachetul respectiv, se
+decrementeaza numarul de clienti catre care mai trebuie sa trimita. Daca
+toti clientii lui sunt conectati, atunci se va trimite pachetul la toti
+clientii si numarul de clienti ramasi va ajunge la 0. Cand numarul ajunge
+la 0, pachetul este scos din lista de clienti pentru a face loc pentru
+pachetele urmatoare. Daca un client nu este conectat, atunci se va trimite
+pachetul cand acesta se va conecta, pachetul ramanand salvat in lista
+de pachete si putand fi accesat la un moment ulterior.
