@@ -53,7 +53,7 @@ care ajuta in scrierea usoara a unor formate sau a unor numere pe care
 le am stocate in format %d.
 
 Functiile sunt cat mai generale pentru a putea fi apelate pentru diversele
-comenzi implementat, mesajul rezultat respecta formatul cererilor aferente.
+comenzi implementate, mesajul rezultat respecta formatul cererilor aferente.
 
 Precizari:
 -la get si delete am un camp id care este singurul query folosit de comenzi,
@@ -71,7 +71,7 @@ generalitate, desi nu am o astfel de cerere in implementare.
 
 Server-ul tine conexiunea in viata doar 5 secunde si ajungeam sa primesc
 un mesaj gol pe care daca il procesam ajungeam la segmentation fault. Asa
-ca am gasit drept work around deschiderea conexiunea inainte de trimiterea
+ca am gasit drept work-around deschiderea conexiunea inainte de trimiterea
 cererii si inchiderea acesteia dupa ce am primit raspunsul de la server.
 Refacand conexiunea pentru fiecare cerere ma asigur ca mereu voi primi
 raspunsul pentru cerere.
@@ -85,8 +85,8 @@ comenzile de register si login;
 -crearea json-ului ce contine detaliile cartii cu campurile title, author,
 genre, publisher, page_count pentru comanda add_book;
 -parsarea jwt token-ului din json-ul cu campul "token";
--parsarea array-ului de carti primite prin comanda get_books si afisarea
-id-ului si titlului cartilor pe fiecare linie prin parsarea JSON_Array-ului;
+-parsarea json array-ului de carti primit prin comanda get_books si afisarea
+id-ului si titlului fiecarei carti pe cate o linie;
 -parsarea json-ului cu cartea aferenta id-ului din comanda get_book si
 afisarea campurilor alaturi de denumirea acestora(acesta este primit
 ca un array asa ca trebuie intai sa il fac obiect);
@@ -122,11 +122,11 @@ https://github.com/kgabis/parson
 
 6. Raspuns de succes/eroare
 
-Daca raspunsul are codul 2XX il consider ca fiind de succes, procesez
+Daca raspunsul are codul 2XX il consider ca fiind de succes. Procesez
 informatiile din raspuns daca am de procesat, daca nu doar afisez faptul
 ca cererea s-a efectuat cu succes(ex: functia register). Raspunsurile
 cu codul de tip 4XX sunt considerate de esec si parsez json-ul de eroare
-si afisez continutul acestuia la stdin, json-ul de eroare se afla din
+si afisez continutul acestuia la stdout, json-ul de eroare se afla din
 ce am observat mereu in aceeasi pozitie pentru o anumita cerere(16 sau 19)
 asa ca implementarea va trimite mesajul de eroare corect(in caz de esec)
 pentru orice comanda la orice moment de timp pentru configuratie curenta
