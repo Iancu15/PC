@@ -153,7 +153,7 @@ Pentru fiecare client catre care se trimite pachetul respectiv, se
 decrementeaza numarul de clienti catre care mai trebuie sa trimita. Daca
 toti clientii lui sunt conectati, atunci se va trimite pachetul la toti
 clientii si numarul de clienti ramasi va ajunge la 0. Cand numarul ajunge
-la 0, pachetul este scos din lista de clienti pentru a face loc pentru
+la 0, pachetul este scos din lista de pachete pentru a face loc pentru
 pachetele urmatoare. Daca un client nu este conectat, atunci se va trimite
 pachetul cand acesta se va conecta, pachetul ramanand salvat in lista
 de pachete si putand fi accesat la un moment ulterior.
